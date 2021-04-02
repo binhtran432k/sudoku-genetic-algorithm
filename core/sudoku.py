@@ -4,16 +4,23 @@ from .population import Population
 from .candidate import Candidate
 from .crossover import CycleCrossover
 from .parentselection import Tournament
-from .settings import candidateNumber, eliteNumber, generationNumber
+from .settings import CANDIDATE_NUMBER, ELITE_NUMBER, GENERATION_NUMBER, RenderOption
 
 class Sudoku:
     """ Solves a given Sudoku puzzle using a genetic algorithm. """
 
-    def __init__(self, given):
+    def __init__(self, given, render):
         self.given = given
+        self.render = render
+        self.bestValues = None
+        self.reseedCount = 0
+        self.exitFlag = False
         return
     
     def solve(self):
+        renderTxt = "Seeding..."
+        self.exitFlag = False
+        self.render(renderTxt, None, RenderOption.ONLY_TEXT)
         mutationNumber = 0  # Number of mutations.
         
         # Mutation parameters.
@@ -23,28 +30,39 @@ class Sudoku:
     
         # Create an initial population.
         self.population = Population()
-        self.population.seed(candidateNumber, self.given)
+        self.population.seed(CANDIDATE_NUMBER, self.given)
     
         # For up to 10000 generations...
         stale = 0
-        for generation in range(0, generationNumber):
-        
+        self.reseedCount = 0
+        for generation in range(0, GENERATION_NUMBER):
+            if (self.exitFlag):
+                return
+            renderTxt = "Reseed count: %d\n" % self.reseedCount
             print("Generation %d" % generation)
             
             # Check for a solution.
             best_fitness = 0.0
-            for c in range(0, candidateNumber):
+            self.bestValues = None
+            for c in range(0, CANDIDATE_NUMBER):
                 fitness = self.population.candidates[c].fitness
                 if(fitness == 1):
                     print("Solution found at generation %d!" % generation)
                     print(self.population.candidates[c].values)
+                    renderTxt += "Solution found at generation %d!" % generation
+                    self.render(renderTxt, self.population.candidates[c].values, RenderOption.FOUNDED)
                     return self.population.candidates[c]
 
                 # Find the best fitness.
                 if(fitness > best_fitness):
                     best_fitness = fitness
+                    self.bestValues = self.population.candidates[c].values
 
             print("Best fitness: %f" % best_fitness)
+            renderTxt += "Generation %d\n" % generation
+            renderTxt += "Best fitness: %f\n" % best_fitness
+            renderTxt += "Mutation rate: %f\n" % mutation_rate
+            self.render(renderTxt, self.bestValues)
 
             # Create the next population.
             next_population = []
@@ -52,13 +70,13 @@ class Sudoku:
             # Select elites (the fittest candidates) and preserve them for the next generation.
             self.population.sort()
             elites = []
-            for e in range(0, eliteNumber):
+            for e in range(0, ELITE_NUMBER):
                 elite = Candidate()
                 elite.values = copy(self.population.candidates[e].values)
                 elites.append(elite)
 
             # Create the rest of the candidates.
-            for count in range(eliteNumber, candidateNumber, 2):
+            for count in range(ELITE_NUMBER, CANDIDATE_NUMBER, 2):
                 # Select parents from population via a tournament.
                 t = Tournament()
                 parent1 = t.compete(self.population.candidates)
@@ -93,7 +111,7 @@ class Sudoku:
                 next_population.append(child2)
 
             # Append elites onto the end of the population. These will not have been affected by crossover or mutation.
-            for e in range(0, eliteNumber):
+            for e in range(0, ELITE_NUMBER):
                 next_population.append(elites[e])
                 
             # Select next generation.
@@ -125,16 +143,17 @@ class Sudoku:
             # Re-seed the population if 100 generations have passed with the fittest two candidates always having the same fitness.
             if(stale >= 100):
                 print("The population has gone stale. Re-seeding...")
-                halfCandidate = int(candidateNumber/2)
-                halfPopulation = self.population.candidates[:halfCandidate]
-                self.population.seed(halfCandidate, self.given)
-                for candidate in halfPopulation :
-                    self.population.candidates.append(candidate)
+                renderTxt = "The population has gone stale. Re-seeding..."
+                self.render(renderTxt, None, RenderOption.ONLY_TEXT)
+                self.population.seed(CANDIDATE_NUMBER, self.given)
                 stale = 0
                 sigma = 1
                 phi = 0
                 mutationNumber = 0
                 mutation_rate = 0.06
+
         
         print("No solution found.")
+        renderTxt = "No solution found."
+        self.render(renderTxt, self.bestValues, RenderOption.NOT_FOUND)
         return None

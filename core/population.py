@@ -2,7 +2,7 @@ from numpy import zeros
 import random
 random.seed()
 from .candidate import Candidate
-from .settings import digitNumber
+from .settings import DIGIT_NUMBER
 
 class Population:	
     """ A set of candidate solutions to the Sudoku puzzle. These candidates are also known as the chromosomes in the population. """
@@ -16,9 +16,9 @@ class Population:
         
         # Determine the legal values that each square can take.
         helper = Candidate()
-        helper.values = [[[] for j in range(0, digitNumber)] for i in range(0, digitNumber)]
-        for row in range(0, digitNumber):
-            for column in range(0, digitNumber):
+        helper.values = [[[] for j in range(0, DIGIT_NUMBER)] for i in range(0, DIGIT_NUMBER)]
+        for row in range(0, DIGIT_NUMBER):
+            for column in range(0, DIGIT_NUMBER):
                 for value in range(1, 10):
                     if((given.values[row][column] == 0) and not (given.is_column_duplicate(column, value) or given.is_block_duplicate(row, column, value) or given.is_row_duplicate(row, value))):
                         # Value is available.
@@ -31,11 +31,11 @@ class Population:
         # Seed a new population.       
         for p in range(0, Nc):
             g = Candidate()
-            for i in range(0, digitNumber): # New row in candidate.
-                row = zeros(digitNumber)
+            for i in range(0, DIGIT_NUMBER): # New row in candidate.
+                row = zeros(DIGIT_NUMBER)
                 
                 # Fill in the givens.
-                for j in range(0, digitNumber): # New column j value in row i.
+                for j in range(0, DIGIT_NUMBER): # New column j value in row i.
                 
                     # If value is already given, don't change it.
                     if(given.values[i][j] != 0):
@@ -45,8 +45,8 @@ class Population:
                         row[j] = helper.values[i][j][random.randint(0, len(helper.values[i][j])-1)]
 
                 # If we don't have a valid board, then try again. There must be no duplicates in the row.
-                while(len(list(set(row))) != digitNumber):
-                    for j in range(0, digitNumber):
+                while(len(list(set(row))) != DIGIT_NUMBER):
+                    for j in range(0, DIGIT_NUMBER):
                         if(given.values[i][j] == 0):
                             row[j] = helper.values[i][j][random.randint(0, len(helper.values[i][j])-1)]
 

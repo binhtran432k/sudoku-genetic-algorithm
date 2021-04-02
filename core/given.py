@@ -1,5 +1,5 @@
 from .candidate import Candidate
-from .settings import digitNumber
+from .settings import DIGIT_NUMBER
 
 class Given(Candidate):
     """ The grid containing the given/known values. """
@@ -10,14 +10,14 @@ class Given(Candidate):
         
     def is_row_duplicate(self, row, value):
         """ Check whether there is a duplicate of a fixed/given value in a row. """
-        for column in range(0, digitNumber):
+        for column in range(0, DIGIT_NUMBER):
             if(self.values[row][column] == value):
                 return True
         return False
 
     def is_column_duplicate(self, column, value):
         """ Check whether there is a duplicate of a fixed/given value in a column. """
-        for row in range(0, digitNumber):
+        for row in range(0, DIGIT_NUMBER):
             if(self.values[row][column] == value):
                 return True
         return False

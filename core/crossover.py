@@ -2,7 +2,7 @@ from numpy import copy, zeros
 import random
 random.seed()
 from .candidate import Candidate
-from .settings import digitNumber
+from .settings import DIGIT_NUMBER
 
 class CycleCrossover:
     """ Crossover relates to the analogy of genes within each parent candidate mixing together in the hopes of creating a fitter child candidate. Cycle crossover is used here (see e.g. A. E. Eiben, J. E. Smith. Introduction to Evolutionary Computing. Springer, 2007). """
@@ -43,10 +43,10 @@ class CycleCrossover:
         return child1, child2
 
     def crossover_rows(self, row1, row2): 
-        child_row1 = zeros(digitNumber)
-        child_row2 = zeros(digitNumber)
+        child_row1 = zeros(DIGIT_NUMBER)
+        child_row2 = zeros(DIGIT_NUMBER)
 
-        remaining = list(range(1, digitNumber+1))
+        remaining = list(range(1, DIGIT_NUMBER+1))
         cycle = 0
         
         while((0 in child_row1) and (0 in child_row2)):  # While child rows not complete...
