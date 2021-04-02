@@ -1,13 +1,15 @@
 import sys
-from sudoku import Sudoku
+from core import App
 
 def main(argv):
-    s = Sudoku()
-    puzzle = "puzzle_easy"
-    s.load("./puzzles/" + puzzle + ".txt")
-    solution = s.solve()
-    if(solution):
-        s.save("./solutions/" + puzzle + ".txt", solution)
+    app = App()
+    puzzle = "puzzle"
+    if len(argv) >= 1:
+        for e in argv:
+            puzzle += "_" + str(e)
+    else:
+        puzzle += "_easy"
+    app.run(puzzle)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

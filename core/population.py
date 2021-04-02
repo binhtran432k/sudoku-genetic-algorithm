@@ -1,24 +1,24 @@
-from sudoku import Candidate
-import numpy
+from numpy import zeros
 import random
 random.seed()
+from .candidate import Candidate
+from .settings import digitNumber
 
 class Population:	
     """ A set of candidate solutions to the Sudoku puzzle. These candidates are also known as the chromosomes in the population. """
 
-    def __init__(self, Nd):
+    def __init__(self):
         self.candidates = []
-        self.Nd = Nd  # Number of digits (in the case of standard Sudoku puzzles, this is 9).
         return
 
     def seed(self, Nc, given):
         self.candidates = []
         
         # Determine the legal values that each square can take.
-        helper = Candidate(self.Nd)
-        helper.values = [[[] for j in range(0, self.Nd)] for i in range(0, self.Nd)]
-        for row in range(0, self.Nd):
-            for column in range(0, self.Nd):
+        helper = Candidate()
+        helper.values = [[[] for j in range(0, digitNumber)] for i in range(0, digitNumber)]
+        for row in range(0, digitNumber):
+            for column in range(0, digitNumber):
                 for value in range(1, 10):
                     if((given.values[row][column] == 0) and not (given.is_column_duplicate(column, value) or given.is_block_duplicate(row, column, value) or given.is_row_duplicate(row, value))):
                         # Value is available.
@@ -30,12 +30,12 @@ class Population:
 
         # Seed a new population.       
         for p in range(0, Nc):
-            g = Candidate(self.Nd)
-            for i in range(0, self.Nd): # New row in candidate.
-                row = numpy.zeros(self.Nd)
+            g = Candidate()
+            for i in range(0, digitNumber): # New row in candidate.
+                row = zeros(digitNumber)
                 
                 # Fill in the givens.
-                for j in range(0, self.Nd): # New column j value in row i.
+                for j in range(0, digitNumber): # New column j value in row i.
                 
                     # If value is already given, don't change it.
                     if(given.values[i][j] != 0):
@@ -45,8 +45,8 @@ class Population:
                         row[j] = helper.values[i][j][random.randint(0, len(helper.values[i][j])-1)]
 
                 # If we don't have a valid board, then try again. There must be no duplicates in the row.
-                while(len(list(set(row))) != self.Nd):
-                    for j in range(0, self.Nd):
+                while(len(list(set(row))) != digitNumber):
+                    for j in range(0, digitNumber):
                         if(given.values[i][j] == 0):
                             row[j] = helper.values[i][j][random.randint(0, len(helper.values[i][j])-1)]
 

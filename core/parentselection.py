@@ -1,4 +1,5 @@
 import random
+random.seed()
 
 class Tournament:
     """ The crossover function requires two parents to be selected from the population pool. The Tournament class is used to do this.

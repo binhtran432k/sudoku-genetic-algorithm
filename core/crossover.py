@@ -1,23 +1,23 @@
-from sudoku import Candidate
-import numpy
+from numpy import copy, zeros
 import random
 random.seed()
+from .candidate import Candidate
+from .settings import digitNumber
 
 class CycleCrossover:
     """ Crossover relates to the analogy of genes within each parent candidate mixing together in the hopes of creating a fitter child candidate. Cycle crossover is used here (see e.g. A. E. Eiben, J. E. Smith. Introduction to Evolutionary Computing. Springer, 2007). """
 
-    def __init__(self, Nd):
-        self.Nd = Nd
+    def __init__(self):
         return
     
     def crossover(self, parent1, parent2, crossover_rate):
         """ Create two new child candidates by crossing over parent genes. """
-        child1 = Candidate(self.Nd)
-        child2 = Candidate(self.Nd)
+        child1 = Candidate()
+        child2 = Candidate()
         
         # Make a copy of the parent genes.
-        child1.values = numpy.copy(parent1.values)
-        child2.values = numpy.copy(parent2.values)
+        child1.values = copy(parent1.values)
+        child2.values = copy(parent2.values)
 
         r = random.uniform(0, 1.1)
         while(r > 1):  # Outside [0, 1] boundary. Choose another.
@@ -43,10 +43,10 @@ class CycleCrossover:
         return child1, child2
 
     def crossover_rows(self, row1, row2): 
-        child_row1 = numpy.zeros(self.Nd)
-        child_row2 = numpy.zeros(self.Nd)
+        child_row1 = zeros(digitNumber)
+        child_row2 = zeros(digitNumber)
 
-        remaining = list(range(1, self.Nd+1))
+        remaining = list(range(1, digitNumber+1))
         cycle = 0
         
         while((0 in child_row1) and (0 in child_row2)):  # While child rows not complete...

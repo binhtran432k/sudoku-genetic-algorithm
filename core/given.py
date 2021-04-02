@@ -1,23 +1,23 @@
-from sudoku import Candidate
+from .candidate import Candidate
+from .settings import digitNumber
 
 class Given(Candidate):
     """ The grid containing the given/known values. """
 
-    def __init__(self, values, Nd):
+    def __init__(self, values):
         self.values = values
-        self.Nd = Nd
         return
         
     def is_row_duplicate(self, row, value):
         """ Check whether there is a duplicate of a fixed/given value in a row. """
-        for column in range(0, self.Nd):
+        for column in range(0, digitNumber):
             if(self.values[row][column] == value):
                 return True
         return False
 
     def is_column_duplicate(self, column, value):
         """ Check whether there is a duplicate of a fixed/given value in a column. """
-        for row in range(0, self.Nd):
+        for row in range(0, digitNumber):
             if(self.values[row][column] == value):
                 return True
         return False

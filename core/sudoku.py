@@ -1,32 +1,18 @@
-import numpy
-import random
-random.seed()
-from sudoku import Given, Population, Candidate, CycleCrossover, Tournament
+from numpy import copy
+from numpy.random import normal
+from .population import Population
+from .candidate import Candidate
+from .crossover import CycleCrossover
+from .parentselection import Tournament
+from .settings import candidateNumber, eliteNumber, generationNumber
 
 class Sudoku:
     """ Solves a given Sudoku puzzle using a genetic algorithm. """
 
-    def __init__(self):
-        self.given = None
-        self.digitNumber = 9  # Number of digits (in the case of standard Sudoku puzzles, this is 9).
-        self.candidateNumber = 1000  # Number of candidates (i.e. population size).
-        self.eliteNumber = int(0.05*self.candidateNumber)  # Number of elites.
-        self.generationNumber = 1000  # Number of generations.
+    def __init__(self, given):
+        self.given = given
         return
     
-    def load(self, path):
-        # Load a configuration to solve.
-        with open(path, "r") as f:
-            values = numpy.loadtxt(f).reshape((self.digitNumber, self.digitNumber)).astype(int)
-            self.given = Given(values, self.digitNumber)
-        return
-
-    def save(self, path, solution):
-        # Save a configuration to a file.
-        with open(path, "w") as f:
-            numpy.savetxt(f, solution.values.reshape(self.digitNumber, self.digitNumber), fmt='%d')
-        return
-        
     def solve(self):
         mutationNumber = 0  # Number of mutations.
         
@@ -36,18 +22,18 @@ class Sudoku:
         mutation_rate = 0.06
     
         # Create an initial population.
-        self.population = Population(self.digitNumber)
-        self.population.seed(self.candidateNumber, self.given)
+        self.population = Population()
+        self.population.seed(candidateNumber, self.given)
     
         # For up to 10000 generations...
         stale = 0
-        for generation in range(0, self.generationNumber):
+        for generation in range(0, generationNumber):
         
             print("Generation %d" % generation)
             
             # Check for a solution.
             best_fitness = 0.0
-            for c in range(0, self.candidateNumber):
+            for c in range(0, candidateNumber):
                 fitness = self.population.candidates[c].fitness
                 if(fitness == 1):
                     print("Solution found at generation %d!" % generation)
@@ -66,20 +52,20 @@ class Sudoku:
             # Select elites (the fittest candidates) and preserve them for the next generation.
             self.population.sort()
             elites = []
-            for e in range(0, self.eliteNumber):
-                elite = Candidate(self.digitNumber)
-                elite.values = numpy.copy(self.population.candidates[e].values)
+            for e in range(0, eliteNumber):
+                elite = Candidate()
+                elite.values = copy(self.population.candidates[e].values)
                 elites.append(elite)
 
             # Create the rest of the candidates.
-            for count in range(self.eliteNumber, self.candidateNumber, 2):
+            for count in range(eliteNumber, candidateNumber, 2):
                 # Select parents from population via a tournament.
                 t = Tournament()
                 parent1 = t.compete(self.population.candidates)
                 parent2 = t.compete(self.population.candidates)
                 
                 ## Cross-over.
-                cc = CycleCrossover(self.digitNumber)
+                cc = CycleCrossover()
                 child1, child2 = cc.crossover(parent1, parent2, crossover_rate=1.0)
                 child1.update_fitness()
                 child2.update_fitness()
@@ -107,7 +93,7 @@ class Sudoku:
                 next_population.append(child2)
 
             # Append elites onto the end of the population. These will not have been affected by crossover or mutation.
-            for e in range(0, self.eliteNumber):
+            for e in range(0, eliteNumber):
                 next_population.append(elites[e])
                 
             # Select next generation.
@@ -125,7 +111,7 @@ class Sudoku:
             elif(phi < 0.2):
                 sigma = sigma*0.998
 
-            mutation_rate = abs(numpy.random.normal(loc=0.0, scale=sigma, size=None))
+            mutation_rate = abs(normal(loc=0.0, scale=sigma, size=None))
             mutationNumber = 0
             phi = 0
 
@@ -139,7 +125,7 @@ class Sudoku:
             # Re-seed the population if 100 generations have passed with the fittest two candidates always having the same fitness.
             if(stale >= 100):
                 print("The population has gone stale. Re-seeding...")
-                self.population.seed(self.candidateNumber, self.given)
+                self.population.seed(candidateNumber, self.given)
                 stale = 0
                 sigma = 1
                 phi = 0
