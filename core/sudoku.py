@@ -125,7 +125,11 @@ class Sudoku:
             # Re-seed the population if 100 generations have passed with the fittest two candidates always having the same fitness.
             if(stale >= 100):
                 print("The population has gone stale. Re-seeding...")
-                self.population.seed(candidateNumber, self.given)
+                halfCandidate = int(candidateNumber/2)
+                halfPopulation = self.population.candidates[:halfCandidate]
+                self.population.seed(halfCandidate, self.given)
+                for candidate in halfPopulation :
+                    self.population.candidates.append(candidate)
                 stale = 0
                 sigma = 1
                 phi = 0

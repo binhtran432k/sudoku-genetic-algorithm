@@ -57,7 +57,7 @@ class Candidate:
         if (int(row_sum) == 1 and int(column_sum) == 1 and int(block_sum) == 1):
             fitness = 1.0
         else:
-            fitness = column_sum * block_sum
+            fitness = row_sum * column_sum * block_sum
         
         self.fitness = fitness
         return
