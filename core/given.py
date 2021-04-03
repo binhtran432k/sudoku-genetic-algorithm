@@ -8,21 +8,21 @@ class Given(Candidate):
         self.values = values
         return
         
-    def is_row_duplicate(self, row, value):
+    def isRowDuplicate(self, row, value):
         """ Check whether there is a duplicate of a fixed/given value in a row. """
         for column in range(0, DIGIT_NUMBER):
             if(self.values[row][column] == value):
                 return True
         return False
 
-    def is_column_duplicate(self, column, value):
+    def isColumnDuplicate(self, column, value):
         """ Check whether there is a duplicate of a fixed/given value in a column. """
         for row in range(0, DIGIT_NUMBER):
             if(self.values[row][column] == value):
                 return True
         return False
 
-    def is_block_duplicate(self, row, column, value):
+    def isBlockDuplicate(self, row, column, value):
         """ Check whether there is a duplicate of a fixed/given value in a 3 x 3 block. """
         i = 3*(int(row/3))
         j = 3*(int(column/3))

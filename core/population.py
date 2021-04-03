@@ -5,13 +5,14 @@ from .candidate import Candidate
 from .settings import DIGIT_NUMBER
 
 class Population:	
-    """ A set of candidate solutions to the Sudoku puzzle. These candidates are also known as the chromosomes in the population. """
+    """ A set of candidate solutions to the Sudoku puzzle. These candidates are also known as
+    the chromosomes in the population. """
 
     def __init__(self):
         self.candidates = []
         return
 
-    def seed(self, Nc, given):
+    def seed(self, candidateNum, given):
         self.candidates = []
         
         # Determine the legal values that each square can take.
@@ -20,7 +21,10 @@ class Population:
         for row in range(0, DIGIT_NUMBER):
             for column in range(0, DIGIT_NUMBER):
                 for value in range(1, 10):
-                    if((given.values[row][column] == 0) and not (given.is_column_duplicate(column, value) or given.is_block_duplicate(row, column, value) or given.is_row_duplicate(row, value))):
+                    if((given.values[row][column] == 0) and
+                            not (given.isColumnDuplicate(column, value) or
+                            given.isBlockDuplicate(row, column, value) or
+                            given.isRowDuplicate(row, value))):
                         # Value is available.
                         helper.values[row][column].append(value)
                     elif(given.values[row][column] != 0):
@@ -29,7 +33,7 @@ class Population:
                         break
 
         # Seed a new population.       
-        for p in range(0, Nc):
+        for p in range(0, candidateNum):
             g = Candidate()
             for i in range(0, DIGIT_NUMBER): # New row in candidate.
                 row = zeros(DIGIT_NUMBER)
@@ -55,16 +59,16 @@ class Population:
             self.candidates.append(g)
         
         # Compute the fitness of all candidates in the population.
-        self.update_fitness()
+        self.updateFitness()
         
         print("Seeding complete.")
         
         return
         
-    def update_fitness(self):
+    def updateFitness(self):
         """ Update fitness of every candidate/chromosome. """
         for candidate in self.candidates:
-            candidate.update_fitness()
+            candidate.updateFitness()
         return
         
     def sort(self):
