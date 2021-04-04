@@ -8,7 +8,7 @@ def main(argv):
         for e in argv:
             puzzle += "_" + str(e)
     else:
-        puzzle += "_easy"
+        puzzle = None
     app.run(puzzle)
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
-from tkinter import Tk, Canvas, Frame, Button, Label
+from tkinter import Tk, Canvas, Frame, Button, Label, filedialog
 
-from .settings import DIGIT_NUMBER, BLOCK_NUMBER, BOARD_SIZE, DIGIT_SIZE, DIGIT_SPACE, DUPLICATE_DIGIT_BG, DUPLICATE_DIGIT_GIVEN_BG, FONT_FAMILY, SOLUTION_DIGIT_BG, SOLUTION_DIGIT_GIVEN_BG, SolveButtonOption, TRANSPARENT_DIGIT_BG
+from .settings import ClearButtonOption, DIGIT_NUMBER, BLOCK_NUMBER, BOARD_SIZE, DIGIT_SIZE, DIGIT_SPACE, DUPLICATE_DIGIT_BG, DUPLICATE_DIGIT_GIVEN_BG, FONT_FAMILY, OpenButtonOption, SOLUTION_DIGIT_BG, SOLUTION_DIGIT_GIVEN_BG, SolveButtonOption, TRANSPARENT_DIGIT_BG, WriteButtonOption
 from .settings import GIVEN_DIGIT_COLOR, NORMAL_DIGIT_COLOR, TEXT_SIZE
 from .given import given
 
@@ -16,7 +16,12 @@ class Ui:
         self.solveButton = None
         self.createWidgets()
 
+        self.openCmd = None
+        self.writeCmd = None
+        self.clearCmd = None
         self.solveCmd = None
+        self.pressCmd = None
+        self.clickCmd = None
 
     def mainloop(self):
         self.window.mainloop()
@@ -35,19 +40,23 @@ class Ui:
 
         # Create button to open game
         self.openButton = Button(self.sizebar, width=20, font=(FONT_FAMILY,TEXT_SIZE),
-                text="Open", state="disabled")
+                text="Open")
         self.openButton.grid(row=0, column=0, padx=5, pady=10)
         # Create button to write game
         self.writeButton = Button(self.sizebar, width=20, font=(FONT_FAMILY,TEXT_SIZE),
-                text="Write", state="disabled")
+                text="Write")
         self.writeButton.grid(row=1, column=0, padx=5, pady=10)
+        # Create button to clear game
+        self.clearButton = Button(self.sizebar, width=20, font=(FONT_FAMILY,TEXT_SIZE),
+                text="Clear", state="disabled")
+        self.clearButton.grid(row=2, column=0, padx=5, pady=10)
         # Create button to solve game
         self.solveButton = Button(self.sizebar, width=20, font=(FONT_FAMILY,TEXT_SIZE),
                 text="Solve", state="disabled")
-        self.solveButton.grid(row=2, column=0, padx=5, pady=10)
+        self.solveButton.grid(row=3, column=0, padx=5, pady=10)
         # Create statistic of sudoku
         self.statistic = Label(self.sizebar, font=(FONT_FAMILY,TEXT_SIZE), wraplength=300)
-        self.statistic.grid(row=3, column=0, pady=10)
+        self.statistic.grid(row=4, column=0, pady=10)
 
         self.initializeBoard()
 
@@ -138,17 +147,87 @@ class Ui:
                     color = SOLUTION_DIGIT_GIVEN_BG
                 self.drawItemBg(row, col, color)
 
+    def openButtonSwitch(self, option):
+        if option == OpenButtonOption.OPEN:
+            self.openButton["text"] = "Close"
+            self.openButton["state"] = "normal"
+            self.writeButtonSwitch(WriteButtonOption.DISABLED)
+            self.clearButtonSwitch(ClearButtonOption.NORMAL)
+            self.solveButtonSwitch(SolveButtonOption.NORMAL)
+        elif option == OpenButtonOption.CLOSE:
+            self.openButton["text"] = "Open"
+            self.openButton["state"] = "normal"
+            self.writeButtonSwitch(WriteButtonOption.NORMAL)
+            self.clearButtonSwitch(ClearButtonOption.DISABLED)
+            self.solveButtonSwitch(SolveButtonOption.DISABLED)
+        elif option == OpenButtonOption.NORMAL:
+            self.openButton["state"] = "normal"
+        elif option == OpenButtonOption.DISABLED:
+            self.openButton["state"] = "disabled"
+        self.openButton.update()
+
+    def writeButtonSwitch(self, option):
+        if option == WriteButtonOption.WRITE:
+            self.writeButton["text"] = "Save"
+            self.writeButton["state"] = "normal"
+            self.openButtonSwitch(OpenButtonOption.DISABLED)
+            self.clearButtonSwitch(ClearButtonOption.NORMAL)
+        elif option == WriteButtonOption.SAVE:
+            self.writeButton["text"] = "Write"
+            self.writeButton["state"] = "normal"
+            self.openButtonSwitch(OpenButtonOption.NORMAL)
+            self.clearButtonSwitch(ClearButtonOption.DISABLED)
+        elif option == WriteButtonOption.NORMAL:
+            self.writeButton["state"] = "normal"
+        elif option == WriteButtonOption.DISABLED:
+            self.writeButton["state"] = "disabled"
+        self.writeButton.update()
+
+    def clearButtonSwitch(self, option):
+        if option == ClearButtonOption.NORMAL:
+            self.clearButton["state"] = "normal"
+        elif option == ClearButtonOption.DISABLED:
+            self.clearButton["state"] = "disabled"
+        self.clearButton.update()
+
     def solveButtonSwitch(self, option):
-        if option == SolveButtonOption.STOP:
+        if option == SolveButtonOption.CANCEL:
             self.solveButton["state"] = "disabled"
-            self.solveButton["text"] = "Stopping.."
+            self.solveButton["text"] = "Canceling.."
         elif option == SolveButtonOption.SOLVE:
-            self.solveButton["text"] = "Stop"
+            self.solveButton["text"] = "Cancel"
             self.solveButton["state"] = "normal"
+            self.openButtonSwitch(OpenButtonOption.DISABLED)
+            self.clearButtonSwitch(ClearButtonOption.DISABLED)
         elif option == SolveButtonOption.READY:
             self.solveButton["text"] = "Solve"
             self.solveButton["state"] = "normal"
+            self.openButtonSwitch(OpenButtonOption.NORMAL)
+            self.clearButtonSwitch(ClearButtonOption.NORMAL)
+        elif option == SolveButtonOption.NORMAL:
+            self.solveButton["state"] = "normal"
+        elif option == SolveButtonOption.DISABLED:
+            self.solveButton["state"] = "disabled"
         self.solveButton.update()
 
+    def showStatistic(self, txt):
+        self.statistic["text"] = txt
+
+    def getPuzzleDialog(self, path="puzzles"):
+        return filedialog.askopenfilename(initialdir=path)
+
+    def savePuzzleDialog(self, path="puzzles"):
+        return filedialog.asksaveasfile(initialdir=path, mode="w", defaultextension=".txt")
+
     def loadCommamd(self):
+        self.openButton["command"] = self.openCmd
+        self.writeButton["command"] = self.writeCmd
+        self.clearButton["command"] = self.clearCmd
         self.solveButton["command"] = self.solveCmd
+        self.window.bind('<Key>', self.pressCmd)
+        self.board.bind('<Button-1>', self.clickCmd)
+
+    def clickToLogicalPosition(self, x, y):
+        row = int(y/(BOARD_SIZE/DIGIT_NUMBER))
+        col = int(x/(BOARD_SIZE/DIGIT_NUMBER))
+        return row, col

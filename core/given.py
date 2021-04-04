@@ -1,4 +1,4 @@
-from numpy import zeros
+from numpy import zeros, copy
 
 from .candidate import Candidate
 from .settings import BLOCK_NUMBER, DIGIT_NUMBER
@@ -7,12 +7,12 @@ class Given:
     """ The grid containing the given/known values. """
 
     def __init__(self):
-        self.values = None
         self.helper = None
         self.bestCandidate = None
         self.zeroCandidate = Candidate()
         self.zeroCandidate.values = zeros((DIGIT_NUMBER, DIGIT_NUMBER), dtype=int)
         self.zeroCandidate.fitness = 0.0
+        self.values = self.zeroCandidate.values
         return
         
     def isRowDuplicate(self, row, value):
@@ -57,12 +57,16 @@ class Given:
                         self.helper.values[row][column].append(self.values[row][column])
                         break
 
-    def resetBestCandidate(self):
-        self.bestCandidate = self.zeroCandidate
+    def resetBestCandidate(self, reuse=False):
+        if reuse:
+            self.bestCandidate = Candidate()
+            self.bestCandidate.values = copy(self.values)
+        else:
+            self.bestCandidate = self.zeroCandidate
 
     def loadValues(self, values):
         self.values = values
-        self.resetBestCandidate()
+        self.resetBestCandidate(True)
 
     def updateDuplicateValues(self):
         self.duplicateValues = zeros((DIGIT_NUMBER, DIGIT_NUMBER), dtype=int)
@@ -70,6 +74,8 @@ class Given:
         for i in range(DIGIT_NUMBER):
             testRowDuplicate = zeros(DIGIT_NUMBER)
             for j in range(DIGIT_NUMBER):
+                if testValues[i][j] == 0:
+                    continue
                 if testRowDuplicate[testValues[i][j]-1] == 1:
                     for k in range(j):
                         if testValues[i][k] == testValues[i][j]:
@@ -81,6 +87,8 @@ class Given:
         for i in range(DIGIT_NUMBER):
             testColumnDuplicate = zeros(DIGIT_NUMBER)
             for j in range(DIGIT_NUMBER):
+                if testValues[j][i] == 0:
+                    continue
                 if testColumnDuplicate[testValues[j][i]-1] == 1:
                     for k in range(j):
                         if testValues[k][i] == testValues[j][i]:
@@ -96,6 +104,8 @@ class Given:
             for j in range(DIGIT_NUMBER):
                 iii = ii + int(j/3)
                 jjj = jj + int(j%3)
+                if testValues[iii][jjj] == 0:
+                    continue
                 if testBlockDuplicate[testValues[iii][jjj]-1] == 1:
                     for k in range(j):
                         kki = ii + int(k/3)

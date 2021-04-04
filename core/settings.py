@@ -1,3 +1,4 @@
+from tkinter.constants import DISABLED
 from numpy import sqrt
 
 """ Genetic Algorithm Settings """
@@ -26,7 +27,22 @@ class RenderOption:
     FOUNDED = 1
     NOT_FOUND = 2
     ONLY_TEXT = 3
+class OpenButtonOption:
+    OPEN = 0
+    CLOSE = 1
+    NORMAL = 2
+    DISABLED = 3
+class WriteButtonOption:
+    WRITE = 0
+    SAVE = 1
+    NORMAL = 2
+    DISABLED = 3
+class ClearButtonOption:
+    NORMAL = 0
+    DISABLED = 1
 class SolveButtonOption:
     SOLVE = 0
-    STOP = 1
+    CANCEL = 1
     READY = 2
+    NORMAL = 3
+    DISABLED = 4
