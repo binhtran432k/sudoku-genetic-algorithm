@@ -4,15 +4,14 @@ from .population import Population
 from .candidate import Candidate
 from .crossover import CycleCrossover
 from .parentselection import Tournament
+from .given import given
 from .settings import CANDIDATE_NUMBER, ELITE_NUMBER, GENERATION_NUMBER, RenderOption
 
 class Sudoku:
     """ Solves a given Sudoku puzzle using a genetic algorithm. """
 
-    def __init__(self, given, render):
-        self.given = given
+    def __init__(self, render):
         self.render = render
-        self.bestValues = None
         self.reseedCount = 0
         self.exitFlag = False
         return
@@ -20,49 +19,49 @@ class Sudoku:
     def solve(self):
         renderTxt = "Seeding..."
         self.exitFlag = False
-        self.render(renderTxt, None, RenderOption.ONLY_TEXT)
+        self.render(renderTxt, RenderOption.ONLY_TEXT)
         mutationNumber = 0  # Number of mutations.
         
         # Mutation parameters.
         phi = 0
         sigma = 1
         mutationRate = 0.06
+
+        # Load Helper for population seed
+        given.loadHelper()
     
         # Create an initial population.
         self.population = Population()
-        self.population.seed(CANDIDATE_NUMBER, self.given)
+        self.population.seed(CANDIDATE_NUMBER)
     
         # For up to 10000 generations...
         stale = 0
         self.reseedCount = 0
+
         for generation in range(0, GENERATION_NUMBER):
             if (self.exitFlag):
                 return
-            print("Generation %d" % generation)
             
             # Check for a solution.
-            bestFitness = 0.0
-            self.bestValues = None
+            given.resetBestCandidate()
             for c in range(0, CANDIDATE_NUMBER):
                 fitness = self.population.candidates[c].fitness
                 if(fitness == 1):
-                    print("Solution found at generation %d!" % generation)
-                    print(self.population.candidates[c].values)
+                    given.bestCandidate = self.population.candidates[c]
                     renderTxt = "Solution found at generation %d!" % generation
-                    self.render(renderTxt, self.population.candidates[c].values, RenderOption.FOUNDED)
-                    return self.population.candidates[c]
+                    self.render(renderTxt, RenderOption.FOUNDED)
+                    print(given.bestCandidate.values)
+                    return given.bestCandidate
 
                 # Find the best fitness.
-                if(fitness > bestFitness):
-                    bestFitness = fitness
-                    self.bestValues = self.population.candidates[c].values
+                if(fitness > given.bestCandidate.fitness):
+                    given.bestCandidate = self.population.candidates[c]
 
-            print("Best fitness: %f" % bestFitness)
-            renderTxt = "Reseed count: %d\n" % self.reseedCount
-            renderTxt += "Generation %d\n" % generation
-            renderTxt += "Best fitness: %f\n" % bestFitness
+            renderTxt = "Generation %d\n" % generation
+            renderTxt += "Best fitness: %f\n" % given.bestCandidate.fitness
             renderTxt += "Mutation rate: %f\n" % mutationRate
-            self.render(renderTxt, self.bestValues)
+            renderTxt += "Reseed count: %d\n" % self.reseedCount
+            self.render(renderTxt)
 
             # Create the next population.
             nextPopulation = []
@@ -89,21 +88,21 @@ class Sudoku:
                 child2.updateFitness()
                 
                 # Mutate child1.
-                old_fitness = child1.fitness
-                success = child1.mutate(mutationRate, self.given)
+                oldFitness = child1.fitness
+                success = child1.mutate(mutationRate, given)
                 child1.updateFitness()
                 if(success):
                     mutationNumber += 1
-                    if(child1.fitness > old_fitness):  # Used to calculate the relative success rate of mutations.
+                    if(child1.fitness > oldFitness):  # Used to calculate the relative success rate of mutations.
                         phi = phi + 1
                 
                 # Mutate child2.
-                old_fitness = child2.fitness
-                success = child2.mutate(mutationRate, self.given)
+                oldFitness = child2.fitness
+                success = child2.mutate(mutationRate, given)
                 child2.updateFitness()
                 if(success):
                     mutationNumber += 1
-                    if(child2.fitness > old_fitness):  # Used to calculate the relative success rate of mutations.
+                    if(child2.fitness > oldFitness):  # Used to calculate the relative success rate of mutations.
                         phi = phi + 1
                 
                 # Add children to new population.
@@ -142,11 +141,10 @@ class Sudoku:
 
             # Re-seed the population if 100 generations have passed with the fittest two candidates always having the same fitness.
             if(stale >= 100):
-                print("The population has gone stale. Re-seeding...")
                 self.reseedCount += 1
                 renderTxt = "The population has gone stale. Re-seeding..."
-                self.render(renderTxt, None, RenderOption.ONLY_TEXT)
-                self.population.seed(CANDIDATE_NUMBER, self.given)
+                self.render(renderTxt, RenderOption.ONLY_TEXT)
+                self.population.seed(CANDIDATE_NUMBER)
                 stale = 0
                 sigma = 1
                 phi = 0
@@ -154,7 +152,6 @@ class Sudoku:
                 mutationRate = 0.06
 
         
-        print("No solution found.")
         renderTxt = "No solution found."
-        self.render(renderTxt, self.bestValues, RenderOption.NOT_FOUND)
+        self.render(renderTxt, RenderOption.NOT_FOUND)
         return None

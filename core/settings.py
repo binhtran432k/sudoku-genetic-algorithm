@@ -2,7 +2,7 @@ from numpy import sqrt
 
 """ Genetic Algorithm Settings """
 DIGIT_NUMBER = 9  # Number of digits (Standard Sudoku is 9).
-BOX_NUMBER = int(sqrt(DIGIT_NUMBER)) # Number of digits on 1 row per box.
+BLOCK_NUMBER = int(sqrt(DIGIT_NUMBER)) # Number of digits on 1 row per box.
 CANDIDATE_NUMBER = 1000  # Number of candidates (i.e. population size).
 ELITE_NUMBER = int(0.05*CANDIDATE_NUMBER)  # Number of elites (Elites will alive after generation).
 GENERATION_NUMBER = 1000  # Number of generations.
@@ -15,7 +15,11 @@ TEXT_SIZE = 18
 FONT_FAMILY = "*"
 NORMAL_DIGIT_COLOR = "blue"
 GIVEN_DIGIT_COLOR = "black"
-FAILED_DIGIT_BG = "red"
+DUPLICATE_DIGIT_BG = "tomato"
+DUPLICATE_DIGIT_GIVEN_BG = "orange"
+SOLUTION_DIGIT_BG = "spring green"
+SOLUTION_DIGIT_GIVEN_BG = "green yellow"
+TRANSPARENT_DIGIT_BG = ""
 # UI Option
 class RenderOption:
     NORMAL = 0

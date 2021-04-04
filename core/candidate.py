@@ -1,6 +1,7 @@
 from numpy import zeros
 import random
 random.seed()
+
 from .settings import DIGIT_NUMBER
 
 class Candidate:
