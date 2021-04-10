@@ -257,8 +257,11 @@ class App:
         given.bestCandidate.gene = encodePuzzle(currentValues)
         # Draw the updated puzzle
         self.ui.drawRemainBoard(currentValues)
-        given.updateDuplicateValues()
-        self.ui.drawDuplicateBg()
+        win = given.updateDuplicateValues()
+        if win:
+            self.ui.drawSolutionBg()
+        else:
+            self.ui.drawDuplicateBg()
         self.keyWaiting = False
 
     def run(self, puzzle = None):

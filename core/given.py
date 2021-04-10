@@ -77,7 +77,7 @@ class Given:
         # Return False if the puzzle hasn't been solve
         for i in range(DIGIT_NUMBER):
             for j in range(DIGIT_NUMBER):
-                if self.duplicateValues[i][j] != 0:
+                if (self.duplicateValues[i][j] != 0) or (testValues[i][j] == 0):
                     return False
 
         return True
