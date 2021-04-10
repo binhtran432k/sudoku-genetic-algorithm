@@ -1,156 +1,147 @@
-from numpy import copy
-from numpy.random import normal
 from .population import Population
-from .candidate import Candidate
-from .crossover import CycleCrossover
-from .parentselection import Tournament
 from .given import given
-from .settings import CANDIDATE_NUMBER, ELITE_NUMBER, GENERATION_NUMBER, RenderOption
+from .settings import POPULATION_SIZE, MAX_GENERATION, RenderOption
+from .settings import DIGIT_NUMBER, MAX_STALE_COUNT, GOAL
+from .helper import encodePuzzle, copyGrid, sameRowIndexes, sameColumnIndexes, sameBlockIndexes
 
 class Sudoku:
-    """ Solves a given Sudoku puzzle using a genetic algorithm. """
-
     def __init__(self, render):
-        self.render = render
-        self.reseedCount = 0
-        self.exitFlag = False
-        return
-    
-    def solve(self):
-        renderTxt = "Seeding..."
-        self.exitFlag = False
-        self.render(renderTxt, RenderOption.ONLY_TEXT)
-        mutationNumber = 0  # Number of mutations.
-        
-        # Mutation parameters.
-        phi = 0
-        sigma = 1
-        mutationRate = 0.06
-
-        # Load Helper for population seed
-        given.loadHelper()
-    
-        # Create an initial population.
+        self.render = render # render the ui when change
+        self.reinitializationCount = 0 # count the reinitialization
+        self.exitFlag = False # cancel solving when it is True
+        self.encodedGiven = encodePuzzle(given.values)
+        self.trackGrid = None
         self.population = Population()
-        self.population.seed(CANDIDATE_NUMBER)
-    
-        # For up to 10000 generations...
+
+    def fillPredetermined(self):
+        """
+        Fills some predetermined cells of the Sudoku grid using a pencil marking method.
+        """
+        self.trackGrid = copyGrid(self.encodedGiven, lambda i, j: set(range(1, DIGIT_NUMBER + 1)))
+
+        def pencilMark(i, j):
+            """
+            Marks the value of grid[i][j] element in it's row, column and block.
+
+            Parameters:
+                - i (int): Block's index.
+                - j (int): Block's element index.
+
+            Returns: The more completed version of the grid.
+            """
+            # remove from same block cells
+            for a, b in sameBlockIndexes(i, j, itself=False):
+                self.trackGrid[a][b].discard(self.encodedGiven[i][j])
+
+            # remove from same row cells
+            for a, b in sameRowIndexes(i, j, itself=False):
+                self.trackGrid[a][b].discard(self.encodedGiven[i][j])
+
+            # remove from same column cells
+            for a, b in sameColumnIndexes(i, j, itself=False):
+                self.trackGrid[a][b].discard(self.encodedGiven[i][j])
+
+        for i in range(DIGIT_NUMBER):
+            for j in range(DIGIT_NUMBER):
+                if self.encodedGiven[i][j] != 0:
+                    pencilMark(i, j)
+
+        while True:
+            anythingChanged = False
+
+            for i in range(DIGIT_NUMBER):
+                for j in range(DIGIT_NUMBER):
+                    if self.encodedGiven[i][j] != 0:
+                        continue
+
+                    elif len(self.trackGrid[i][j]) == 0:
+                        renderTxt = 'The puzzle is unsolvable'
+                        self.render(renderTxt, RenderOption.NOT_FOUND)
+                        return False
+                    elif len(self.trackGrid[i][j]) == 1:
+                        self.encodedGiven[i][j] = list(self.trackGrid[i][j])[0]
+                        pencilMark(i, j)
+
+                        anythingChanged = True
+
+            if not anythingChanged:
+                return True
+
+    def solve(self):
+        """
+        Solves a given Sudoku puzzle using a genetic algorithm.
+        """
+        self.exitFlag = False
+
+        # Fill all predetermined value for the puzzle
+        self.fillPredetermined()
+        print(*self.encodedGiven, sep="\n")
+        renderTxt = "Initializing..."
+        self.render(renderTxt, RenderOption.ONLY_TEXT)
+
+        # Generate initial candidates
+        self.population.initializeCandidates(POPULATION_SIZE, self.encodedGiven, self.trackGrid)
+        prevBestFitness = 0
         stale = 0
-        self.reseedCount = 0
+        cumElites = []
+        self.reinitializationCount = 0
 
-        for generation in range(0, GENERATION_NUMBER):
-            if (self.exitFlag):
+        # For up to 2000 generations...
+        for i in range(MAX_GENERATION):
+            if self.exitFlag:
                 return
-            
-            # Check for a solution.
-            given.resetBestCandidate()
-            for c in range(0, CANDIDATE_NUMBER):
-                fitness = self.population.candidates[c].fitness
-                if(fitness == 1):
-                    given.bestCandidate = self.population.candidates[c]
-                    renderTxt = "Solution found at generation %d!" % generation
-                    self.render(renderTxt, RenderOption.FOUNDED)
-                    print(given.bestCandidate.values)
-                    return given.bestCandidate
 
-                # Find the best fitness.
-                if(fitness > given.bestCandidate.fitness):
-                    given.bestCandidate = self.population.candidates[c]
+            # Update the best candidate for each generation
+            given.bestCandidate = self.population.candidates[0]
+            prevBestFitness = self.population.candidates[0].fitness
 
-            renderTxt = "Generation %d\n" % generation
-            renderTxt += "Best fitness: %f\n" % given.bestCandidate.fitness
-            renderTxt += "Mutation rate: %f\n" % mutationRate
-            renderTxt += "Reseed count: %d\n" % self.reseedCount
-            self.render(renderTxt)
+            if i % 1 == 0:
+                print("Generation %d" % i)
+                print("Best score: %d" % prevBestFitness)
+                print("Worst score: %d" % self.population.candidates[-1].fitness)
 
-            # Create the next population.
-            nextPopulation = []
+            renderTxt = "Generation %d\n" % i
+            renderTxt += "Best fitness: %d\n" % prevBestFitness
+            renderTxt += "Worst fitness: %d\n" % self.population.candidates[-1].fitness
+            renderTxt += "Reinitialization count: %d\n" % self.reinitializationCount
 
-            # Select elites (the fittest candidates) and preserve them for the next generation.
-            self.population.sort()
-            elites = []
-            for e in range(0, ELITE_NUMBER):
-                elite = Candidate()
-                elite.values = copy(self.population.candidates[e].values)
-                elites.append(elite)
-
-            # Create the rest of the candidates.
-            for count in range(ELITE_NUMBER, CANDIDATE_NUMBER, 2):
-                # Select parents from population via a tournament.
-                t = Tournament()
-                parent1 = t.compete(self.population.candidates)
-                parent2 = t.compete(self.population.candidates)
-                
-                ## Cross-over.
-                cc = CycleCrossover()
-                child1, child2 = cc.crossover(parent1, parent2, crossoverRate=1.0)
-                child1.updateFitness()
-                child2.updateFitness()
-                
-                # Mutate child1.
-                oldFitness = child1.fitness
-                success = child1.mutate(mutationRate, given)
-                child1.updateFitness()
-                if(success):
-                    mutationNumber += 1
-                    if(child1.fitness > oldFitness):  # Used to calculate the relative success rate of mutations.
-                        phi = phi + 1
-                
-                # Mutate child2.
-                oldFitness = child2.fitness
-                success = child2.mutate(mutationRate, given)
-                child2.updateFitness()
-                if(success):
-                    mutationNumber += 1
-                    if(child2.fitness > oldFitness):  # Used to calculate the relative success rate of mutations.
-                        phi = phi + 1
-                
-                # Add children to new population.
-                nextPopulation.append(child1)
-                nextPopulation.append(child2)
-
-            # Append elites onto the end of the population. These will not have been affected by crossover or mutation.
-            for e in range(0, ELITE_NUMBER):
-                nextPopulation.append(elites[e])
-                
-            # Select next generation.
-            self.population.candidates = nextPopulation
-            self.population.updateFitness()
-            
-            # Calculate new adaptive mutation rate (based on Rechenberg's 1/5 success rule). This is to stop too much mutation as the fitness progresses towards unity.
-            if(mutationNumber == 0):
-                phi = 0  # Avoid divide by zero.
+            # Check for a solution
+            if prevBestFitness == GOAL:
+                renderTxt = "Solution found at generation %d!" % i
+                self.render(renderTxt, RenderOption.FOUNDED)
+                return
             else:
-                phi = phi / mutationNumber
-            
-            if(phi > 0.2):
-                sigma = sigma/0.998
-            elif(phi < 0.2):
-                sigma = sigma*0.998
+                self.render(renderTxt)
 
-            mutationRate = abs(normal(loc=0.0, scale=sigma, size=None))
-            mutationNumber = 0
-            phi = 0
+            # Go to next generation if the current population doesn't have solution
+            self.population.nextGen(self.encodedGiven, self.trackGrid)
 
-            # Check for stale population.
-            self.population.sort()
-            if(self.population.candidates[0].fitness != self.population.candidates[1].fitness):
+            # Check for stale population
+            if self.population.candidates[0].fitness != prevBestFitness:
                 stale = 0
             else:
                 stale += 1
 
-            # Re-seed the population if 100 generations have passed with the fittest two candidates always having the same fitness.
-            if(stale >= 100):
-                self.reseedCount += 1
-                renderTxt = "The population has gone stale. Re-seeding..."
+            # Re-seed the population if 30 generations have passed with the fittest value not improving.
+            if stale > MAX_STALE_COUNT:
+                # print("The population has gone stale. Searching in local space...")
+                # self.population.localSearch(3, self.given, self.track_grid)
+                self.reinitializationCount += 1
+                renderTxt = "The population has gone stale. Reinitializing..."
                 self.render(renderTxt, RenderOption.ONLY_TEXT)
-                self.population.seed(CANDIDATE_NUMBER)
+                
+                # Store the top few solutions (candiddates) from each stale population
+                # When enough top solutions accumulate, a new population is created from these best solutions
+                # and used as an initial population when the GA is restarted.
+                if len(cumElites) < POPULATION_SIZE:
+                    numElite = int(POPULATION_SIZE * 0.1)
+                    cumElites.extend(self.population.candidates[:numElite])
+                    self.population.initializeCandidates(POPULATION_SIZE, self.encodedGiven, self.trackGrid)
+                else:
+                    print("Activate cumulative method")
+                    self.population.candidates = cumElites
+                    cumElites = []
                 stale = 0
-                sigma = 1
-                phi = 0
-                mutationNumber = 0
-                mutationRate = 0.06
-
         
         renderTxt = "No solution found."
         self.render(renderTxt, RenderOption.NOT_FOUND)

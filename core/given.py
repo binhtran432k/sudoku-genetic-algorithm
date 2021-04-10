@@ -1,7 +1,8 @@
-from numpy import zeros, copy
+from core.helper import decodePuzzle, encodePuzzle
+from numpy import zeros
 
 from .candidate import Candidate
-from .settings import BLOCK_NUMBER, DIGIT_NUMBER
+from .settings import DIGIT_NUMBER
 
 class Given:
     """ The grid containing the given/known values. """
@@ -10,57 +11,14 @@ class Given:
         self.helper = None
         self.bestCandidate = None
         self.zeroCandidate = Candidate()
-        self.zeroCandidate.values = zeros((DIGIT_NUMBER, DIGIT_NUMBER), dtype=int)
+        self.zeroCandidate.gene = zeros((DIGIT_NUMBER, DIGIT_NUMBER), dtype=int)
         self.zeroCandidate.fitness = 0.0
-        self.values = self.zeroCandidate.values
-        return
-        
-    def isRowDuplicate(self, row, value):
-        """ Check whether there is a duplicate of a fixed/given value in a row. """
-        for column in range(0, DIGIT_NUMBER):
-            if(self.values[row][column] == value):
-                return True
-        return False
-
-    def isColumnDuplicate(self, column, value):
-        """ Check whether there is a duplicate of a fixed/given value in a column. """
-        for row in range(0, DIGIT_NUMBER):
-            if(self.values[row][column] == value):
-                return True
-        return False
-
-    def isBlockDuplicate(self, row, column, value):
-        """ Check whether there is a duplicate of a fixed/given value in a 3 x 3 block. """
-        beginRow = int(row/3)*3
-        beginCol = int(column/3)*3
-        for i in range(BLOCK_NUMBER):
-            for j in range(BLOCK_NUMBER):
-                if self.values[beginRow+i][beginCol+j] == value:
-                    return True
-        return False
-
-    def loadHelper(self):
-        """ Determine the legal values that each square can take. """
-        self.helper = Candidate()
-        self.helper.values = [[[] for j in range(0, DIGIT_NUMBER)] for i in range(0, DIGIT_NUMBER)]
-        for row in range(0, DIGIT_NUMBER):
-            for column in range(0, DIGIT_NUMBER):
-                for value in range(1, DIGIT_NUMBER + 1):
-                    if((self.values[row][column] == 0) and
-                            not (self.isColumnDuplicate(column, value) or
-                            self.isBlockDuplicate(row, column, value) or
-                            self.isRowDuplicate(row, value))):
-                        # Value is available.
-                        self.helper.values[row][column].append(value)
-                    elif(self.values[row][column] != 0):
-                        # Given/known value from file.
-                        self.helper.values[row][column].append(self.values[row][column])
-                        break
+        self.values = self.zeroCandidate.gene
 
     def resetBestCandidate(self, reuse=False):
         if reuse:
             self.bestCandidate = Candidate()
-            self.bestCandidate.values = copy(self.values)
+            self.bestCandidate.gene = encodePuzzle(self.values)
         else:
             self.bestCandidate = self.zeroCandidate
 
@@ -70,7 +28,7 @@ class Given:
 
     def updateDuplicateValues(self):
         self.duplicateValues = zeros((DIGIT_NUMBER, DIGIT_NUMBER), dtype=int)
-        testValues = self.bestCandidate.values
+        testValues = decodePuzzle(self.bestCandidate.gene)
         for i in range(DIGIT_NUMBER):
             testRowDuplicate = zeros(DIGIT_NUMBER)
             for j in range(DIGIT_NUMBER):
@@ -116,5 +74,12 @@ class Given:
                 if testBlockDuplicate[testValues[iii][jjj]-1] >= 1:
                     self.duplicateValues[iii][jjj] += 1
                 testBlockDuplicate[testValues[iii][jjj]-1] += 1
+        # Return False if the puzzle hasn't been solve
+        for i in range(DIGIT_NUMBER):
+            for j in range(DIGIT_NUMBER):
+                if self.duplicateValues[i][j] != 0:
+                    return False
+
+        return True
 
 given = Given()
